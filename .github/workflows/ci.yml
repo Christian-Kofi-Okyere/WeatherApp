@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: ci
 
 on: [push, pull_request]  # Run this on every push or PR
 
