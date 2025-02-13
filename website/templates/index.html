@@ -24,28 +24,29 @@
     
     <!-- Custom Styles for a Colorful, Dark Design -->
     <style>
-      /* Page Background with a Dark Gradient */
+      /* Increase base font size */
       body {
         background: linear-gradient(45deg, #1e1e2f, #3a3a52);
         color: #f8f9fa;
+        font-size: 1.3rem; /* increased from 1.1rem */
       }
-      /* Force all cards to have a dark background with no border */
+      /* Card styling */
       .card {
         background-color: #343a40 !important;
         border: none;
         border-radius: 10px;
         margin-bottom: 20px;
       }
-      /* Card body text color */
       .card .card-body {
         color: #f8f9fa;
       }
-      /* Style for primary buttons with a colorful gradient */
+      /* Increase primary button text size */
       .btn-primary {
         background: linear-gradient(45deg, #ff6f61, #de4c4a);
         border: none;
+        font-size: 1.2rem;
       }
-      /* Style the dropdown menu */
+      /* Dropdown menu styles */
       .dropdown-menu {
         background: #343a40;
         border: none;
@@ -54,20 +55,82 @@
         background-color: #495057;
         border: 1px solid #6c757d;
         color: #f8f9fa;
+        font-size: 1.1rem;
       }
       .dropdown-menu label {
         color: #f8f9fa;
+        font-size: 1.1rem;
       }
-      /* Secondary buttons */
       .btn-secondary {
         background-color: #6c757d;
         border: none;
+        font-size: 1.1rem;
       }
-      /* Accent color for headings within cards */
+      /* Larger accent headings within cards */
       .accent {
         color: #ff6f61;
       }
+      h4.card-title {
+        font-size: 2rem;
+      }
+      h5 {
+        font-size: 1.5rem;
+      }
+      p {
+        font-size: 1.2rem;
+      }
+      /* Enhanced styling for main weather card texts */
+      .weather-card h4.card-title {
+        font-size: 3rem; /* increased from 2.5rem */
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+      }
+      .weather-card h1.display-3 {
+        font-size: 5rem; /* increased from 4rem */
+        font-weight: 700;
+        text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.7);
+      }
+      .weather-card p,
+      .weather-card small,
+      .weather-card .lead {
+        font-size: 1.8rem; /* increased from 1.4rem */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      }
+      /* Forecast card specific styling */
+      .forecast-card h5 {
+        font-size: 2.5rem;  /* increased size */
+        font-weight: bold;
+        color: #ffffff; /* white text */
+      }
+      .forecast-card p {
+        font-size: 2rem;  /* increased size */
+        font-weight: bold;
+        color: #ffffff;
+      }
+      /* Custom class for forecast columns: 5 equal columns that fill the row */
+      .forecast-col {
+        width: calc(100% / 5);
+        padding: 10px;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        text-align: center;
+      }
+      /* Additional styling for map card */
+      #map {
+        height: 650px;
+        width: 100%;
+        border-radius: 10px;
+      }
+      /* Hourly Chart container styling */
+      .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+      }
     </style>
+    <!-- Leaflet CSS for map card -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   </head>
   
   <body class="g-sidenav-show bg-gray-100">
@@ -105,11 +168,24 @@
           </form>
         </div>
         <!-- End of Selector -->
+
+        <!-- Determine Background Color for Weather Card -->
+        {% if weather_data_numeric.temperature is not none %}
+          {% if weather_data_numeric.temperature < 10 %}
+            {% set bg_color = "linear-gradient(45deg, #4a90e2, #145388)" %}
+          {% elif weather_data_numeric.temperature > 25 %}
+            {% set bg_color = "linear-gradient(45deg, #ff0000, #cc0000)" %}
+          {% else %}
+            {% set bg_color = "linear-gradient(45deg, #343a40, #2c2c2c)" %}
+          {% endif %}
+        {% else %}
+          {% set bg_color = "linear-gradient(45deg, #343a40, #2c2c2c)" %}
+        {% endif %}
         
         <div class="row">
-          <!-- Main Weather Card -->
+          <!-- Main Weather Card with dynamic background -->
           <div class="col-xl-8 col-sm-12 mb-xl-0 mb-4">
-            <div class="card weather-card">
+            <div class="card weather-card" style="background: {{ bg_color }} !important;">
               <div class="card-body p-4">
                 <!-- Header: Title and Last Updated Time -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -167,201 +243,195 @@
                   </div>
                   <div class="col">
                     <small class="text-uppercase">Dew Point</small>
-                    <p class="font-weight-bold mb-0">{{ weather_data_numeric.dew_point or "N/A" }}</p>
+                    <p class="font-weight-bold mb-0">
+                      {% if weather_data_numeric.dew_point is not none %}
+                        {{ weather_data_numeric.dew_point }}°C
+                      {% elif weather_data_numeric.temperature is not none and weather_data_numeric.humidity is not none %}
+                        {% set computed_dew = weather_data_numeric.temperature - ((100 - weather_data_numeric.humidity) / 5) %}
+                        {{ computed_dew|round(1) }}°C
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>          
           
-        <!-- Sales Card -->
-        <div class="col-xl-4 col-sm-12">
-          <div class="card" style="height: 650px; position: relative;">
-            <!-- Background Image Filling the Card -->
-            <img 
-              src="{{ url_for('static', filename='img/HILmr.png') }}" 
-              alt="Sales Image" 
-              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"
-            >
-            
-            <!-- Optional Overlay for Better Readability -->
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); z-index: 2;"></div>
-            
-            <!-- Card Content Overlaid on the Image -->
-            <div class="card-body p-3" style="position: relative; z-index: 3;">
-              <div class="row">
-                <div class="col-8">
-                  <div class="numbers">
-                    <!-- <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Sales</p>
-                    <h5 class="font-weight-bolder accent">$103,430</h5> -->
-                  </div>
-                </div>
-                <div class="col-4 text-end">
-                  <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
-                    <i class="ni ni-cart text-lg opacity-10" aria-hidden="true"></i>
+          <!-- Map Card (Replaces Sales Card) -->
+          <div class="col-xl-4 col-sm-12">
+            <div class="card" style="height: 650px; position: relative;">
+              <!-- Map Container -->
+              <div id="map"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- New Hourly Forecast Chart Card Section -->
+        <div class="container-fluid py-4">
+          <div class="row">
+            <div class="col-xl-12 col-sm-12 mb-xl-0 mb-4">
+              <div class="card" style="height: 450px;">
+                <div class="card-body p-3" style="position: relative;">
+                  <h4 class="card-title">Hourly Forecast</h4>
+                  <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      
-      <!-- Additional Card Section -->
-      <div class="container-fluid py-4">
-        <div class="row">
-          <!-- Today's Land Card -->
-          <div class="col-xl-4 col-sm-12 mb-xl-0 mb-4">
-            <div class="card" style="height: 200px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Today's Land</p>
-                      <h5 class="font-weight-bolder accent">$53,000</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+55%</span> since yesterday
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Today's Hide Card -->
-          <div class="col-xl-2 col-sm-12 mb-xl-0 mb-4">
-            <div class="card" style="height: 200px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Today's Hide</p>
-                      <h5 class="font-weight-bolder accent">$53,000</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+55%</span> since yesterday
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Today's End Card -->
-          <div class="col-xl-2 col-sm-12 mb-xl-0 mb-4">
-            <div class="card" style="height: 200px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Today's End</p>
-                      <h5 class="font-weight-bolder accent">$53,000</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+55%</span> since yesterday
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Today's Ping Card -->
-          <div class="col-xl-2 col-sm-12 mb-xl-0 mb-4">
-            <div class="card" style="height: 200px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Today's Ping</p>
-                      <h5 class="font-weight-bolder accent">$53,000</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+55%</span> since yesterday
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Sales Card -->
-          <div class="col-xl-2 col-sm-12">
-            <div class="card" style="height: 200px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Sales</p>
-                      <h5 class="font-weight-bolder accent">$103,430</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+5%</span> than last month
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
-                      <i class="ni ni-cart text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
+        
+        <!-- New 5-Day Forecast Card Section -->
+        <div class="container-fluid py-4">
+          <div class="row">
+            <div class="col-xl-12">
+              <div class="card" style="margin-top: 20px; background: #2c2c2c; border-radius: 10px; padding: 20px;">
+                <div class="card-body">
+                  <h4 class="card-title text-center" style="font-size: 2.5rem; font-weight: bold; color: #ffffff; margin-bottom: 20px;">5-Day Forecast</h4>
+                  <div class="d-flex justify-content-between">
+                    {% if forecast_data %}
+                      {% set forecasts_by_day = {} %}
+                      <!-- Group forecast data by date -->
+                      {% for entry in forecast_data.list %}
+                        {% set date = entry.dt_txt.split(' ')[0] %}
+                        {% if date not in forecasts_by_day %}
+                          {% set _ = forecasts_by_day.update({date: []}) %}
+                        {% endif %}
+                        {% set _ = forecasts_by_day[date].append(entry) %}
+                      {% endfor %}
+                      
+                      <!-- Convert dictionary items to a list, then limit to 5 days -->
+                      {% set days_list = forecasts_by_day.items()|list %}
+                      {% set days_list = days_list[:5] %}
+                      
+                      <!-- Display exactly 5 forecast cards -->
+                      {% for day_tuple in days_list %}
+                        {% set day = day_tuple[0] %}
+                        {% set entries = day_tuple[1] %}
+                        <div class="forecast-col">
+                          <h5 style="margin-bottom: 10px; font-size: 2.5rem; font-weight: bold; color: #ffffff;">{{ day }}</h5>
+                          {% set first = entries[0] %}
+                          <img src="https://openweathermap.org/img/wn/{{ first.weather[0].icon }}@2x.png" alt="{{ first.weather[0].description }}" style="max-height: 60px; margin-bottom: 10px;">
+                          <p style="margin: 0; font-size: 1.8rem; font-weight: bold; color: #ffffff;">{{ first.main.temp }}°C</p>
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      <p style="font-size: 1.8rem; color: #ffffff;">Forecast data is not available.</p>
+                    {% endif %}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div> <!-- End Additional Card Section -->
-      
-      <!-- Bottom Card Section -->
-      <div class="container-fluid py-4">
-        <div class="row">
-          <div class="col-xl-12 col-sm-12 mb-xl-0 mb-4">
-            <div class="card" style="height: 450px;">
-              <div class="card-body p-3">
-                <div class="row">
-                  <div class="col-8">
-                    <div class="numbers">
-                      <p class="text-sm mb-0 text-uppercase font-weight-bold accent">Today's Money</p>
-                      <h5 class="font-weight-bolder accent">$53,000</h5>
-                      <p class="mb-0">
-                        <span class="text-success text-sm font-weight-bolder">+55%</span> since yesterday
-                      </p>
-                    </div>
-                  </div>
-                  <div class="col-4 text-end">
-                    <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                      <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </main>
-     <!-- Gets User's Geolocation -->
+    
+    <!-- Leaflet JS for Map Card -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- Chart.js for Hourly Forecast Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Initialize Map -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        {% if weather_data_string.latitude and weather_data_string.longitude %}
+          var lat = {{ weather_data_string.latitude }};
+          var lon = {{ weather_data_string.longitude }};
+          var map = L.map('map').setView([lat, lon], 10);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+          }).addTo(map);
+          L.marker([lat, lon]).addTo(map)
+            .bindPopup('{{ weather_data_string.name }}: {{ weather_data_numeric.temperature }}°C')
+            .openPopup();
+        {% else %}
+          document.getElementById('map').innerHTML = "<p>Map data not available.</p>";
+        {% endif %}
+      });
+    </script>
+    
+    <!-- Initialize Hourly Forecast Chart -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        {% if forecast_data and forecast_data.list|length >= 8 %}
+          var hourlyForecast = {{ forecast_data.list|tojson }};
+          var labels = [];
+          var temps = [];
+          for (var i = 0; i < 8; i++) {
+            var entry = hourlyForecast[i];
+            labels.push(entry.dt_txt.split(' ')[1].substring(0, 5));
+            temps.push(entry.main.temp);
+          }
+          var ctx = document.getElementById('hourlyChart').getContext('2d');
+          var gradient = ctx.createLinearGradient(0, 0, 0, 300);
+          gradient.addColorStop(0, 'rgba(255, 159, 64, 0.5)');
+          gradient.addColorStop(1, 'rgba(255, 159, 64, 0)');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Temperature (°C)',
+                data: temps,
+                backgroundColor: gradient,
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 2,
+                pointRadius: 6,
+                pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                pointHoverRadius: 8,
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  labels: {
+                    font: {
+                      size: 16
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  ticks: {
+                    font: {
+                      size: 14
+                    }
+                  },
+                  grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                  }
+                },
+                y: {
+                  ticks: {
+                    font: {
+                      size: 14
+                    }
+                  },
+                  grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }
+              }
+            }
+          });
+        {% else %}
+          document.getElementById('hourlyChart').parentElement.innerHTML = "<p>Hourly forecast data is not available.</p>";
+        {% endif %}
+      });
+    </script>
+    
+    <!-- Gets User's Geolocation -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         function getLocation() {
@@ -375,8 +445,6 @@
         function sendLocation(position) {
           const latitude = position.coords.latitude;
           const longitude = position.coords.longitude;
-      
-          // Send location data to Flask backend (ensure it completes before redirecting)
           fetch('/save_location', {
             method: 'POST',
             headers: {
@@ -386,7 +454,7 @@
           })
           .then(response => {
             if (response.redirected) {
-              window.location.href = response.url; // Redirect only after backend processes data
+              window.location.href = response.url;
             } else {
               return response.json();
             }
@@ -398,7 +466,6 @@
           console.error("Geolocation error:", error.message);
         }
       
-        // Call the function when the page loads
         getLocation();
       });
     </script> 
