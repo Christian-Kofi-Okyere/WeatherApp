@@ -5,3 +5,4 @@ psycopg2==2.9.5
 python-dotenv==0.21.0
 requests==2.26.0
 werkzeug==2.2.2
+pytz==2025.1
