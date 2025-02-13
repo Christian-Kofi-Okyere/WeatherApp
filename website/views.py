@@ -5,18 +5,14 @@ Module views: Contains Flask routes for the weather website.
 import os
 import datetime
 
-
 from flask import Blueprint, render_template, jsonify, url_for, request, session
 import requests
 from pytz import timezone
 
-
 from .models import WeatherDescriptionString, WeatherDescriptionNumeric
-
 
 # Create a blueprint
 main_blueprint = Blueprint("main", __name__)
-
 
 def get_weather_data(city, country, weather_data_string, weather_data_numeric):
     api_key = os.getenv("WEATHER_KEY")  # I saved my key in .env file
@@ -61,12 +57,28 @@ def get_weather_data(city, country, weather_data_string, weather_data_numeric):
         return data
     else:
         error_message = "Unable to fetch weather data. Please check your inputs."
+        return None
 
+def get_forecast_data(city, country):
+    """
+    Fetch 5-day forecast data (in 3-hour intervals) from OpenWeatherMap.
+    """
+    api_key = os.getenv("WEATHER_KEY")
+    location_query = f"{city},{country}"
+    forecast_url = (
+        f"https://api.openweathermap.org/data/2.5/forecast?"
+        f"q={location_query}&appid={api_key}&units=metric"
+    )
+    response = requests.get(forecast_url, timeout=5)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
 
 @main_blueprint.route("/", methods=["GET", "POST"])
 @main_blueprint.route("/index", methods=["GET", "POST"])
 def index():
-    """Render the main index page with weather data."""
+    """Render the main index page with weather data and forecast."""
     weather_data_string = WeatherDescriptionString()
     weather_data_numeric = WeatherDescriptionNumeric()
     error_message = None
@@ -75,22 +87,25 @@ def index():
     if request.method == "POST":
         # Attempt to get geolocation coordinates from the form
         city = request.form.get("city")
-        _state = request.form.get("state")  # Renamed to _state because it is unused.
+        _state = request.form.get("state")  # Unused.
         country = request.form.get("country")
     else:
         city = session.get("name")
         country = session.get("country")
 
+    # Get current weather data
     get_weather_data(city, country, weather_data_string, weather_data_numeric)
+    # Get forecast data (could be None if API call fails)
+    forecast_data = get_forecast_data(city, country)
 
     return render_template(
         "index.html",
         weather_data_string=weather_data_string,
         weather_data_numeric=weather_data_numeric,
+        forecast_data=forecast_data,
         error_message=error_message,
         time=time,
     )
-
 
 @main_blueprint.route("/save_location", methods=["GET", "POST"])
 def save_location():
