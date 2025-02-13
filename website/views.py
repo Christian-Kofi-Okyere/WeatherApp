@@ -18,24 +18,7 @@ from .models import WeatherDescriptionString, WeatherDescriptionNumeric
 main_blueprint = Blueprint("main", __name__)
 
 
-@main_blueprint.route("/", methods=["GET", "POST"])
-@main_blueprint.route("/index", methods=["GET", "POST"])
-def index():
-    """Render the main index page with weather data."""
-    weather_data_string = WeatherDescriptionString()
-    weather_data_numeric = WeatherDescriptionNumeric()
-    error_message = None
-    time = datetime.datetime.now(timezone("US/Eastern")).strftime("%H:%M:%S")
-
-    if request.method == "POST":
-        # Attempt to get geolocation coordinates from the form
-        city = request.form.get("city")
-        _state = request.form.get("state")  # Renamed to _state because it is unused.
-        country = request.form.get("country")
-    else:
-        city = session.get("name")
-        country = session.get("country")
-
+def get_weather_data(city, country, weather_data_string, weather_data_numeric):
     api_key = os.getenv("WEATHER_KEY")  # I saved my key in .env file
 
     location_query = f"{city},{country}"
@@ -74,8 +57,31 @@ def index():
         weather_data_numeric.temperature = main_data.get("temp")
         weather_data_numeric.code = data.get("cod")
         weather_data_numeric.wind = data.get("wind", {}).get("speed")
+
+        return data
     else:
         error_message = "Unable to fetch weather data. Please check your inputs."
+
+
+@main_blueprint.route("/", methods=["GET", "POST"])
+@main_blueprint.route("/index", methods=["GET", "POST"])
+def index():
+    """Render the main index page with weather data."""
+    weather_data_string = WeatherDescriptionString()
+    weather_data_numeric = WeatherDescriptionNumeric()
+    error_message = None
+    time = datetime.datetime.now(timezone("US/Eastern")).strftime("%H:%M:%S")
+
+    if request.method == "POST":
+        # Attempt to get geolocation coordinates from the form
+        city = request.form.get("city")
+        _state = request.form.get("state")  # Renamed to _state because it is unused.
+        country = request.form.get("country")
+    else:
+        city = session.get("name")
+        country = session.get("country")
+
+    get_weather_data(city, country, weather_data_string, weather_data_numeric)
 
     return render_template(
         "index.html",

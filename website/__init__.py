@@ -16,11 +16,13 @@ def create_app():
     else:
         app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
+    # Register blueprint (routes)
     app.register_blueprint(main_blueprint)
 
-    with app.app_context():
-        app.run(debug=True)
     return app
 
-if __name__ == '__main__':
-    create_app()
+
+if __name__ == "__main__":
+    # Only run the server if you execute this file directly.
+    flask_app = create_app()
+    flask_app.run(debug=True)
